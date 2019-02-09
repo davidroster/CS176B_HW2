@@ -1,77 +1,124 @@
 #David Roster
 #CS176B HW2
 
-def open_audio_source_file():
-    print("Entering open_audio_source_file() function")
-    print("Fuck me")
-    f=open("pink_panther.au", "rb")
-    #print("source file is " + f)
-    return f
+from functools import partial
+import os
+import sys
 
-def open_audio_dest_file():
-    print("Entering open_audio_dest_file() function")
-    print("Fuck Me")
-    f=open("test_pinkpanther.au", "wb")
-    #print("dest file is " + f)
-    return f
+def read_sample(method, source_file, total_bytes, total_packets, total_loss, dest_file):
+    create_dest_file(dest_file)
+    with open(source_file, 'rb') as openfileobject:
+        for chunk in iter(partial(openfileobject.read, 1), b''):
+            if(method == 1):
+                count = 1
+                loss_remainder = total_bytes / total_loss
+                if ((count % loss_remainder) == 1):
+                    #sample is saved
+                    store_sample(dest_file, chunk)
+                else:
+                    #sample is lost
+                    #make chunk 8 zero bits - silence
+                    chunk = 00000000
+                    store_sample(dest_file, chunk)
+                count = count + 1
+            if(method == 2):
+                print("This is where I am getting confused what to do")
 
-def read_sample(filename):
-    print("Entering read_sample(filename) function")
-    print("filename is ...")
-    print(filename)
-    #print("Entering read_sample(filename) function")
-    #with open("pink_panther.au", "wb") as f:
-    f = open("pink_panther.au", "rb")
-    byte = f.read(10000)
-    print("This is value of byte = ")
-    print(byte)
-        #while byte:
-            # Do stuff with byte.
-            #byte = f.read(1)
-    return byte
+def record_prev_sample(prev_sample):
+    temp = prev_sample
 
+def store_sample(dest_file, sample):
+    with open(dest_file, "ab") as f:
+        f.write(sample)
 
+def store_alternate_data(sample_size):
+    new_file = open("test_pinkpanther.au", "wb")
+    new_file.close()
+    with open("test_pinkpanther.au", "ab") as f:
+    #Methods for alternate data
 
-def store_sample(filename, sample):
-    print("Entering store_sample() function")
-    print("Maca is hella dope")
-    f = open("test_pinkpanther.au", "wb")
-    print(f)
-    f.write(sample)
+        alternate_date = 1
+        if (alternate_date == 1):
+    #1. Make sample all Zeros (Playling Silence)
+            zero_sample = sample_size * 0
+            f.write(zero_sample)
 
-def store_alternate_data():
-    print("Fuck me")
+    #2. Repeat last sample sent
+        if (alternate_date == 2):
+            print("Resending last sample")
 
-def calculate_loss_probability():
-    print("Entering calculate_loss_probability() function")
-    print("Me and Danny vs the WORLD")
-    loss_probability = 90
-    print("Returning loss probability is ")
-    print(loss_probability)
-    return loss_probability
+    #3. Repeat last packet sent
+        if (alternate_date == 3):
+            print("resending last packet")
 
+def create_dest_file(dest_file):
+    f = open(dest_file, "wb")
+    f.close()
 
-# if __name__ == '__main__':
-#     main()
+def calculate_metrics(source_file, loss_probability, packet_size, ):
+    total_bytes = os.path.getsize(source_file)
+    total_packets = total_bytes / packet_size
+
+    loss_percentage = loss_probability / 100
+    total_loss = total_bytes * loss_percentage
+
+    return total_bytes, total_packets, total_loss
 
 def main():
 
-    SF = open_audio_source_file()
-    #print("source file is " + SF)
-    DF = open_audio_dest_file()
-    #print("source file is " + DF)
+    print("Let's get this money!!")
 
-    threshold = 99
+    source_file = input("What is the desired source file?")
+    dest_file = input("What is the desired dest file?")
+    packet_size = input("What is the desired packet size?")
+    sample_size = input("What is the desired sample size?") #Make sample size = 1 byte = 8 bits always! Way easier and follow mu law encoding 
+    loss_probability = input("What is the desired loss probability - enter num between 1-100?")
+    threshold = input("What is the desired threshold?") #Do i really need this?
+    method = input('''What is the desired Methods for alternate data? This is for the whole duration of audio file!
+                     1=play silence, 
+                     2=repeat sample, 
+                     3=repeat packet''')
 
-    #while not EOF
-    while True:
-        sample = read_sample(SF)   #Read audio sample from a file 
-        loss = calculate_loss_probability()
-        if (loss < threshold): 
-            store_sample(DF, sample)   #Store the received sample
+    #Going to assume uniform loss over audio file
 
-        else:
-            store_alternate_data()   #See details for alternativess
+    total_bytes, total_packets, total_loss = calculate_metrics(source_file, loss_probability, packet_size)
+    read_sample(method, source_file, total_bytes, total_packets, total_loss, dest_file)
+'''
+    #Make sample all zeros
+    if (method == 1):
+        create_dest_file(dest_file)
+        with open(source_file, 'rb') as openfileobject:
+            for chunk in iter(partial(openfileobject.read, 1), b''):
+                count = 1
+                loss_remainder = total_bytes / total_loss
+                if ((count % loss_remainder) == 1):
+                    #sample is saved
+                    store_sample(dest_file, chunk)
+                else:
+                    #sample is lost
+                    #make chunk 8 zero bits - silence
+                    chunk = 00000000
+                    store_sample(dest_file, chunk)
+                count = count + 1
+    
+    #Repeat last sample sent
+    if(method == 2):
+        create_dest_file(dest_file)
+        with open(source_file, 'rb') as openfileobject:
+            for chunk in iter(partial(openfileobject.read, 1), b''):
+                prev_chunk = ()
+                count = 1
+                loss_remainder = total_bytes / total_loss
+                if ((count % loss_remainder) == 1):
+                    #sample is saved
+                    store_sample(dest_file, chunk)
+                else:
+                    #sample is lost
+                    #Repeat last sample sent
+                    
+                    store_sample(dest_file, chunk)
+                count = count + 1 
+'''
 
 if __name__ == '__main__':
     main()
